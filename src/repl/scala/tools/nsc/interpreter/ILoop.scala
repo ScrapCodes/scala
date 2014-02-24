@@ -469,6 +469,16 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
       echo("")
     }
   }
+  private def replayWithRecreateInterpreter() {
+    createInterpreter()
+    if (replayCommandStack.isEmpty)
+      echo("Nothing to replay.")
+    else for (cmd <- replayCommands) {
+      echo("Replaying: " + cmd)  // flush because maybe cmd will have its own output
+      command(cmd)
+      echo("")
+    }
+  }
   def resetCommand() {
     echo("Resetting interpreter state.")
     if (replayCommandStack.nonEmpty) {
@@ -611,8 +621,9 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter)
     if (f.exists) {
       addedClasspath = ClassPath.join(addedClasspath, f.path)
       val totalClasspath = ClassPath.join(settings.classpath.value, addedClasspath)
+      settings.classpath.value = totalClasspath
       echo("Added '%s'.  Your new classpath is:\n\"%s\"".format(f.path, totalClasspath))
-      replay()
+      replayWithRecreateInterpreter()
     }
     else echo("The path '" + f + "' doesn't seem to exist.")
   }
